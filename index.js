@@ -3,15 +3,6 @@
 
 var express = require('express');
 
-//add pg
-var pg = require('pg').native
-	, connectionString = process.env.DATABASE_URL
-	, client
-	, query;
-
-client = new pg.Client(connectionString);
-client.connect();
-
 //added cors
 var app = express()
 	, cors = require('cors');
