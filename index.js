@@ -3,22 +3,37 @@
 
 var express = require('express');
 
-// added cors
+//add pg
+var pg = require('pg').native
+	, connectionString = process.env.DATABASE_URL
+	, client
+	, query;
+
+client = new pg.Client(connectionString);
+client.connect();
+
+//added cors
 var app = express()
-   , cors = require('cors');
+	, cors = require('cors');
 
 app.use(express.bodyParser());
 app.use(express.static(__dirname));
 app.use(cors());
 
 //data
+//(0) close to hill
+//(1) close to river
+//(2) close to residential area
+//(3) close to valley
 var hydropower = [
 	{power: '2000', cost: '200', pollute: '200'},
+	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''}
 ];
 
 var coal = [
+	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''}
@@ -27,10 +42,12 @@ var coal = [
 var oil = [
 	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''},
+	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''}
 ];
 
 var gas = [
+	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''}
@@ -39,10 +56,19 @@ var gas = [
 var genthermal = [
 	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''},
+	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''}
 ];
 
 var unclear = [
+	{power: '', cost: '', pollute: ''},
+	{power: '', cost: '', pollute: ''},
+	{power: '', cost: '', pollute: ''},
+	{power: '', cost: '', pollute: ''}
+];
+
+var solar = [
+	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''},
 	{power: '', cost: '', pollute: ''}
@@ -200,5 +226,30 @@ app.get('/nuclear/:id/pollute', function(req, res) {
     return res.send('Error 404: No data found');
   }
   res.send(nuclear[req.params.id].pollute);
+});
+
+//GET solar
+app.get('/solar/:id/power', function(req, res) {
+  if(solar.length <= req.params.id || req.params.id < 0) {
+    res.statusCode = 404;
+    return res.send('Error 404: No data found');
+  }
+  res.send(solar[req.params.id].power);
+});
+
+app.get('/solar/:id/cost', function(req, res) {
+  if(solar.length <= req.params.id || req.params.id < 0) {
+    res.statusCode = 404;
+    return res.send('Error 404: No data found');
+  }
+  res.send(solar[req.params.id].cost);
+});
+
+app.get('/solar/:id/pollute', function(req, res) {
+  if(solar.length <= req.params.id || req.params.id < 0) {
+    res.statusCode = 404;
+    return res.send('Error 404: No data found');
+  }
+  res.send(solar[req.params.id].pollute);
 });
 
