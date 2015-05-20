@@ -15,7 +15,6 @@ app.use(express.bodyParser());
 app.use(express.static(__dirname));
 app.use(cors());
 
-<<<<<<< HEAD
 //data
 //(0) close to hill
 //(1) close to river
@@ -81,7 +80,6 @@ var solar = [
 	{power: '2', cost: '95', pollute: '41'},
 	{power: '2', cost: '85', pollute: '40'}
 ];
-=======
 
 var server = app.listen(process.env.PORT, function () {
     console.log('Listening on port %d', server.address().port);
@@ -130,7 +128,6 @@ app.get('/game', function (req, res) {
             res.statusCode = 404;
             return res.send('Error 404: No saved game found for that user');
         }
->>>>>>> b898490aaa278aac4bdce04adfc7cff83c1e658b
 
         res.statusCode = 200;
         res.send(result.rows[0]);
@@ -337,56 +334,3 @@ app.get('/solar/:id/pollute', function (req, res) {
     res.send(solar[req.params.id].pollute);
 });
 
-//data
-//(0) close to hill
-//(1) close to river
-//(2) close to residential area
-//(3) close to valley
-var hydropower = [
-    {power: '2000', cost: '200', pollute: '200'},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
-
-var coal = [
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
-
-var oil = [
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
-
-var gas = [
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
-
-var genthermal = [
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
-
-var unclear = [
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
-
-var solar = [
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
