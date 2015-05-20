@@ -23,16 +23,25 @@ var server = app.listen(process.env.PORT, function () {
 app.put('/game/save', function (req, res) {
     client.connect();
 
-
-
     //Validate the request
     if (req.body.hasOwnProperty('user_id') && req.body.hasOwnProperty('population') && req.body.hasOwnProperty('pollution') &&
         req.body.hasOwnProperty('power_demand') && req.body.hasOwnProperty('plants')) {
         var game = req.body;
 
-        //TODO validate the saved game.
+        //TODO validate the saved game. i.e user_id exists.
+        var saveGameQuery = client.query('INSERT INTO games', [game.user_id, game.population, game.pollution, game.power_demand, game.plants]);
+
+        saveGameQuery.on('end', function(result) {
+           res.statusCode = 200;
+            res.send('Game saved successfully');
+        });
+
+        saveGameQuery.on('error', function(error) {
+           res.statusCode = 500;
+            res.send('Error 500: An unexpected error has occured. Details: ' + error);
+        });
     } else {
-        res.statusCode = 422;
+        res.statusCode = 400;
         return res.send('Error: your request is missing some required data');
     }
 });
