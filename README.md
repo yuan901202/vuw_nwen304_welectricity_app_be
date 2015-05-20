@@ -1,7 +1,3 @@
-# !Note
-Determine how much power that power source can generate, how much cost could be, and what pollute standard?
-
-Do we have to add populartion rate?
 
 # welectricity-ninja-hertz
 
