@@ -20,6 +20,7 @@ var server = app.listen(process.env.PORT, function () {
     console.log('Listening on port %d', server.address().port);
 });
 
+//Save a game
 app.post('/game', function (req, res) {
     client.connect();
 
@@ -48,6 +49,7 @@ app.post('/game', function (req, res) {
     }
 });
 
+//Get a saved game
 app.get('/game', function (req, res) {
     if (!req.params.hasOwnProperty('user_id')) {
         res.statusCode = 400;
