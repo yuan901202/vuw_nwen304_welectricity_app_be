@@ -20,7 +20,7 @@ var server = app.listen(process.env.PORT, function () {
     console.log('Listening on port %d', server.address().port);
 });
 
-app.put('/game/save', function (req, res) {
+app.post('/game', function (req, res) {
     client.connect();
 
     //Validate the request
@@ -31,19 +31,40 @@ app.put('/game/save', function (req, res) {
         //TODO validate the saved game. i.e user_id exists.
         var saveGameQuery = client.query('INSERT INTO games', [game.user_id, game.population, game.pollution, game.power_demand, game.plants]);
 
-        saveGameQuery.on('end', function(result) {
-           res.statusCode = 200;
+        saveGameQuery.on('end', function (result) {
+            client.end();
+            res.statusCode = 200;
             res.send('Game saved successfully');
         });
 
-        saveGameQuery.on('error', function(error) {
-           res.statusCode = 500;
-            res.send('Error 500: An unexpected error has occured. Details: ' + error);
+        saveGameQuery.on('error', function (error) {
+            client.end();
+            res.statusCode = 500;
+            res.send('Error 500: An unexpected error has occurred. Details: ' + error);
         });
     } else {
         res.statusCode = 400;
-        return res.send('Error: your request is missing some required data');
+        return res.send('Error 400: your request is missing some required data');
     }
+});
+
+app.get('/game', function (req, res) {
+    if (!req.params.hasOwnProperty('user_id')) {
+        res.statusCode = 400;
+        res.send('Error 400; user_id is required');
+    }
+
+    var loadGameQuery = client.query('SELECT * FROM games WHERE user_id = $1', [req.params.user_id]);
+
+    loadGameQuery.on('end', function (result) {
+        if(result.rows.length <= 0) {
+            res.statusCode = 404;
+            return res.send('Error 404: No saved game found for that user');
+        }
+
+        res.statusCode = 200;
+        res.send(result.rows[0]);
+    });
 });
 
 //GET hydropower
