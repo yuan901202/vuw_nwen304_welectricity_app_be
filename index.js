@@ -15,6 +15,9 @@ app.use(express.bodyParser());
 app.use(express.static(__dirname));
 app.use(cors());
 
+client = new pg.Client(connectionString);
+client.connect();
+
 
 var server = app.listen(process.env.PORT, function () {
     console.log('Listening on port %d', server.address().port);
