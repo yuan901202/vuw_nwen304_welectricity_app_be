@@ -25,51 +25,50 @@ app.post('/game', function (req, res) {
     client.connect();
 
     //Validate the request
-    if (req.body.hasOwnProperty('user_id') && req.body.hasOwnProperty('population') && req.body.hasOwnProperty('pollution') &&
-        req.body.hasOwnProperty('power_demand') && req.body.hasOwnProperty('plants')) {
-        var game = req.body;
-
-        //TODO validate the saved game. i.e user_id exists.
-
-        var gameExistsQuery = client.query('SELECT COUNT(*) FROM games WHERE user_id = $1', [req.body.user_id]);
-
-        gameExistsQuery.on('end', function(results) {
-            if(results.rows.length > 0) {
-                //A save game for this user does exist so UPDATE it
-                var updateSave = client.query('UPDATE games SET population=$1, power_demand=$2, plants=$3 WHERE user_id=$4', [game.population, game.pollution, game.power_demand, game.plants, game.user_id]);
-
-                updateSave.on('end', function (result) {
-                    client.end();
-                    res.statusCode = 200;
-                    res.send('Game saved successfully');
-                });
-
-                updateSave.on('error', function (error) {
-                    client.end();
-                    res.statusCode = 500;
-                    res.send('Error 500: An unexpected error has occurred. Details: ' + error);
-                });
-            } else {
-                //A save game for this user does not exist so INSERT it
-                var createSave = client.query('INSERT INTO games', [game.user_id, game.population, game.pollution, game.power_demand, game.plants]);
-
-                createSave.on('end', function (result) {
-                    client.end();
-                    res.statusCode = 200;
-                    res.send('Game saved successfully');
-                });
-
-                createSave.on('error', function (error) {
-                    client.end();
-                    res.statusCode = 500;
-                    res.send('Error 500: An unexpected error has occurred. Details: ' + error);
-                });
-            }
-        });
-    } else {
+    if (!req.body.hasOwnProperty('user_id') || !req.body.hasOwnProperty('population') || !req.body.hasOwnProperty('pollution') || !req.body.hasOwnProperty('power_demand') || !req.body.hasOwnProperty('plants')) {
         res.statusCode = 400;
         return res.send('Error 400: your request is missing some required data');
     }
+    
+    var game = req.body;
+
+    //TODO validate the saved game. i.e user_id exists.
+
+    var gameExistsQuery = client.query('SELECT COUNT(*) FROM games WHERE user_id = $1', [req.body.user_id]);
+
+    gameExistsQuery.on('end', function (results) {
+        if (results.rows.length > 0) {
+            //A save game for this user does exist so UPDATE it
+            var updateSave = client.query('UPDATE games SET population=$1, power_demand=$2, plants=$3 WHERE user_id=$4', [game.population, game.pollution, game.power_demand, game.plants, game.user_id]);
+
+            updateSave.on('end', function (result) {
+                client.end();
+                res.statusCode = 200;
+                res.send('Game saved successfully');
+            });
+
+            updateSave.on('error', function (error) {
+                client.end();
+                res.statusCode = 500;
+                res.send('Error 500: An unexpected error has occurred. Details: ' + error);
+            });
+        } else {
+            //A save game for this user does not exist so INSERT it
+            var createSave = client.query('INSERT INTO games', [game.user_id, game.population, game.pollution, game.power_demand, game.plants]);
+
+            createSave.on('end', function (result) {
+                client.end();
+                res.statusCode = 200;
+                res.send('Game saved successfully');
+            });
+
+            createSave.on('error', function (error) {
+                client.end();
+                res.statusCode = 500;
+                res.send('Error 500: An unexpected error has occurred. Details: ' + error);
+            });
+        }
+    });
 });
 
 //Get a saved game
