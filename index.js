@@ -29,7 +29,7 @@ app.post('/game', function (req, res) {
         res.statusCode = 400;
         return res.send('Error 400: your request is missing some required data');
     }
-    
+
     var game = req.body;
 
     //TODO validate the saved game. i.e user_id exists.
@@ -41,32 +41,12 @@ app.post('/game', function (req, res) {
             //A save game for this user does exist so UPDATE it
             var updateSave = client.query('UPDATE games SET population=$1, power_demand=$2, plants=$3 WHERE user_id=$4', [game.population, game.pollution, game.power_demand, game.plants, game.user_id]);
 
-            updateSave.on('end', function (result) {
-                client.end();
-                res.statusCode = 200;
-                res.send('Game saved successfully');
-            });
-
-            updateSave.on('error', function (error) {
-                client.end();
-                res.statusCode = 500;
-                res.send('Error 500: An unexpected error has occurred. Details: ' + error);
-            });
+            handleSaveQuery(res, client, updateSave);
         } else {
             //A save game for this user does not exist so INSERT it
             var createSave = client.query('INSERT INTO games', [game.user_id, game.population, game.pollution, game.power_demand, game.plants]);
 
-            createSave.on('end', function (result) {
-                client.end();
-                res.statusCode = 200;
-                res.send('Game saved successfully');
-            });
-
-            createSave.on('error', function (error) {
-                client.end();
-                res.statusCode = 500;
-                res.send('Error 500: An unexpected error has occurred. Details: ' + error);
-            });
+            handleSaveQuery(res, client, createSave);
         }
     });
 });
@@ -265,6 +245,27 @@ app.get('/solar/:id/pollute', function (req, res) {
     }
     res.send(solar[req.params.id].pollute);
 });
+
+/**
+ * A function to handle a save query
+ *
+ * @param res - The response object
+ * @param client - The db client
+ * @param query - The query that is attempting to save a game
+ */
+function handleSaveQuery(res, client, query) {
+    query.on('end', function (result) {
+        client.end();
+        res.statusCode = 200;
+        res.send('Game saved successfully');
+    });
+
+    query.on('error', function (error) {
+        client.end();
+        res.statusCode = 500;
+        res.send('Error 500: An unexpected error has occurred. Details: ' + error);
+    });
+}
 
 //data
 //(0) close to hill
