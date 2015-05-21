@@ -16,7 +16,7 @@ app.use(express.static(__dirname));
 app.use(cors());
 
 client = new pg.Client(connectionString);
-client.connect();
+
 
 
 var server = app.listen(process.env.PORT, function () {
@@ -32,7 +32,6 @@ app.post('/game', function (req, res) {
         res.statusCode = 400;
         return res.send('Error 400: your request is missing some required data');
     }
-1
     var game = req.body;
 
     //TODO validate the saved game. i.e user_id exists.
@@ -55,13 +54,13 @@ app.post('/game', function (req, res) {
 });
 
 //Get a saved game
-app.get('/game', function (req, res) {
-    if (!req.params.hasOwnProperty('user_id')) {
+app.get('/game/:userid', function (req, res) {
+    if (!req.params.hasOwnProperty('userid')) {
         res.statusCode = 400;
-        res.send('Error 400; user_id is required');
+        return res.send('Error 400; user id is required');
     }
 
-    var loadGameQuery = client.query('SELECT * FROM games WHERE user_id = $1', [req.params.user_id]);
+    var loadGameQuery = client.query('SELECT * FROM games WHERE user_id = $1', [req.params.userid]);
 
     loadGameQuery.on('end', function (result) {
         if(result.rows.length <= 0) {
