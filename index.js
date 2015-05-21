@@ -34,7 +34,7 @@ app.post('/game', function (req, res) {
     }
     var game = req.body;
 
-    //TODO validate the saved game. i.e user_id exists.
+    //TODO validate the saved game. i.e user_id exists. This can be done when we know what the range of values for the above can be.
 
     var gameExistsQuery = client.query('SELECT COUNT(*) AS count FROM games WHERE user_id = $1', [req.body.user_id]);
 
