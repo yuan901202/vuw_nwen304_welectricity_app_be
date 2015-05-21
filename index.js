@@ -29,15 +29,15 @@ app.post('/game', function (req, res) {
         res.statusCode = 400;
         return res.send('Error 400: your request is missing some required data');
     }
-
+1
     var game = req.body;
 
     //TODO validate the saved game. i.e user_id exists.
 
-    var gameExistsQuery = client.query('SELECT COUNT(*) FROM games WHERE user_id = $1', [req.body.user_id]);
+    var gameExistsQuery = client.query('SELECT COUNT(*) AS count FROM games WHERE user_id = $1', [req.body.user_id]);
 
     gameExistsQuery.on('end', function (results) {
-        if (results.rows.length > 0) {
+        if (results.rows[0].count > 0) {
             //A save game for this user does exist so UPDATE it
             var updateSave = client.query('UPDATE games SET population=$1, power_demand=$2, plants=$3 WHERE user_id=$4', [game.population, game.pollution, game.power_demand, game.plants, game.user_id]);
 
