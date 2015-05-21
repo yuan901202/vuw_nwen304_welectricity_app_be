@@ -71,6 +71,11 @@ app.get('/game/:userid', function (req, res) {
         res.statusCode = 200;
         res.send(result.rows[0]);
     });
+
+    loadGameQuery.on('error', function(error) {
+        res.statusCode = 500;
+        res.send('Error 500: ' + error);
+    });
 });
 
 //GET hydropower
