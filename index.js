@@ -60,6 +60,7 @@ app.get('/game/:userid', function (req, res) {
         return res.send('Error 400; user id is required');
     }
 
+    client.connect();
     var loadGameQuery = client.query('SELECT * FROM games WHERE user_id = $1', [req.params.userid]);
 
     loadGameQuery.on('end', function (result) {
