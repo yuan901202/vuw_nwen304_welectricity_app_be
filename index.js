@@ -41,7 +41,7 @@ app.post('/game', function (req, res) {
     gameExistsQuery.on('end', function (results) {
         if (results.rows[0].count > 0) {
             //A save game for this user does exist so UPDATE it
-            var updateSave = client.query('UPDATE games SET population=$1, power_demand=$2, plants=$3 WHERE user_id=$4', [game.population, game.pollution, game.power_demand, game.plants, game.user_id]);
+            var updateSave = client.query('UPDATE games SET population=$1, pollution=$2, power_demand=$3, plants=$4 WHERE user_id=$5', [game.population, game.pollution, game.power_demand, game.plants, game.user_id]);
 
             handleSaveQuery(res, client, updateSave);
         } else {
