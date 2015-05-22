@@ -46,10 +46,15 @@ app.post('/game', function (req, res) {
             handleSaveQuery(res, client, updateSave);
         } else {
             //A save game for this user does not exist so INSERT it
-            var createSave = client.query('INSERT INTO games', [game.user_id, game.population, game.pollution, game.power_demand, game.plants]);
+            var createSave = client.query('INSERT INTO games VALUES($1, $2, $3, $4, $5)', [game.user_id, game.population, game.pollution, game.power_demand, game.plants]);
 
             handleSaveQuery(res, client, createSave);
         }
+    });
+
+    gameExistsQuery.on('error', function (error) {
+        res.statusCode = 500;
+        res.send('Error 500: ' + error);
     });
 });
 
