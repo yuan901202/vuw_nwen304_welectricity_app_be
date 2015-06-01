@@ -10,7 +10,7 @@ var app = express(),
     connectionString = process.env.DATABASE_URL,    //This is set in the heroku environment
     client,
     query,
-    hasher = require('password-hash-and-salt');;
+    hasher = require('password-hash-and-salt');
 
 app.use(express.bodyParser());
 app.use(express.static(__dirname));
@@ -281,11 +281,19 @@ app.get('/solar/:id/pollute', function (req, res) {
 });
 
 /**
+<<<<<<< HEAD
  * A function to handle a save savedGamesQuery
  *
  * @param res - The response object
  * @param client - The db client
  * @param query - The savedGamesQuery that is attempting to save a game
+=======
+ * A function to handle a save query
+ *
+ * @param res - The response object
+ * @param client - The db client
+ * @param query - The query that is attempting to save a game
+>>>>>>> feature-saveLoadGame
  */
 function handleSaveQuery(res, client, query) {
     query.on('end', function (result) {
