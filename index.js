@@ -63,6 +63,12 @@ app.post('/user/create', function(req, res) {
             });
         });
     });
+
+    userExistsQuery.on('error', function (error) {
+        console.log(error);
+        res.statusCode = 500;
+        res.send("Error 500: An unknown server error has occurred");
+    })
 });
 
 //Save a game
