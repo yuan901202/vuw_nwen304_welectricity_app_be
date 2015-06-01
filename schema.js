@@ -8,7 +8,8 @@ var pg = require('pg').native,
 client = new pg.Client(connectionString);
 client.connect();
 
-var dropQuery = client.query('DROP TABLE IF EXISTS games');
+var dropGamesQuery = client.query('DROP TABLE IF EXISTS games');
+var dropUsersQuery = client.query('DROP TABLE IF EXISTS users');
 
 //Create a user table to store all user info
 var createUserQuery = client.query('CREATE TABLE users (user_id SERIAL PRIMARY KEY, user_email VARCHAR(255) UNIQUE, username VARCHAR(255), password text NOT NULL)');
