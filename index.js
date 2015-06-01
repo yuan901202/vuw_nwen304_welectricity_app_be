@@ -26,14 +26,14 @@ var server = app.listen(process.env.PORT, function () {
 
 //Create a new user
 app.post('/user/create', function(req, res) {
-    if(!req.body.hasOwnProperty('password') || !req.body.hasOwnProperty('email')) {
+    if(!req.body.hasOwnProperty('password') || !req.body.hasOwnProperty('email') || !req.body.hasOwnProperty('username')) {
         res.statusCode = 400;
         return res.send('Error 400: your request is missing some required data');
     }
 
     client.connect();
 
-    //Verify password and email e.g email is not already set
+    //Verify email is not already set
     var userExistsQuery = client.query('SELECT COUNT(*) as count FROM users WHERE user_email = $1', [req.body.email]);
 
     userExistsQuery.on('end', function(results) {
