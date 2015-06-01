@@ -32,15 +32,36 @@ app.post('/user/create', function(req, res) {
     }
 
     //Verify password and email e.g email is not already set
+    var userExistsQuery = client.query('SELECT COUNT(*) as count WHERE email = $1', [req.body.email]);
 
-    //Create user
-    hasher(req.body.password).hash(function(error, hash) {
-        if(error) {
-            res.statusCode = 500;
-            return res.send("Error 500: An unknown server error has occured");
+    userExistsQuery.on('end', function(result) {
+
+        //If email is already in the database
+        if (results.rows[0].count <= 0) {
+            res.statusCode = 409;
+            res.send('A user with this email already exists');
         }
 
-        //store new user in database
+        //Create user password hash
+        hasher(req.body.password).hash(function(error, hash) {
+            if(error) {
+                res.statusCode = 500;
+                return res.send("Error 500: An unknown server error has occurred");
+            }
+
+            //store new user in database
+            var createUserQuery = client.query('INSERT INTO users VALUES($1, $2, $3)', [req.body.email, req.body.username, hash]);
+
+            createUserQuery.on('end', function (result) {
+                res.statusCode = 201;
+                res.send('User created successfully');
+            });
+
+            createUserQuery.on('error', function(error) {
+                res.statusCode = 500;
+                res.send('Error 500: ' + error);
+            });
+        });
     });
 });
 

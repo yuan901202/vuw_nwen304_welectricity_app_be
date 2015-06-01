@@ -11,7 +11,7 @@ client.connect();
 var dropQuery = client.query('DROP TABLE IF EXISTS games');
 
 //Create a user table to store all user info
-var createUserQuery = client.query('CREATE TABLE users (user_id SERIAL PRIMARY KEY, username VARCHAR(255), password text NOT NULL');
+var createUserQuery = client.query('CREATE TABLE users (user_id SERIAL PRIMARY KEY, user_email VARCHAR(255) UNIQUE, username VARCHAR(255), password text NOT NULL)');
 
 //Create a new saved game table
 var savedGamesQuery = client.query('CREATE TABLE games (user_id integer UNIQUE, population integer, pollution integer, power_demand integer, plants integer[])');
