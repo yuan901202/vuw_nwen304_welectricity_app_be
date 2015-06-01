@@ -31,15 +31,17 @@ app.post('/user/create', function(req, res) {
         return res.send('Error 400: your request is missing some required data');
     }
 
-    //Verify password and email e.g email is not already set
-    var userExistsQuery = client.query('SELECT COUNT(*) as count WHERE email = $1', [req.body.email]);
+    client.connect();
 
-    userExistsQuery.on('end', function(result) {
+    //Verify password and email e.g email is not already set
+    var userExistsQuery = client.query('SELECT COUNT(*) as count FROM users WHERE user_email = $1', [req.body.email]);
+
+    userExistsQuery.on('end', function(results) {
 
         //If email is already in the database
-        if (results.rows[0].count <= 0) {
+        if (results.rows[0].count > 0) {
             res.statusCode = 409;
-            res.send('A user with this email already exists');
+            return res.send('A user with this email already exists');
         }
 
         //Create user password hash
@@ -50,7 +52,7 @@ app.post('/user/create', function(req, res) {
             }
 
             //store new user in database
-            var createUserQuery = client.query('INSERT INTO users VALUES($1, $2, $3)', [req.body.email, req.body.username, hash]);
+            var createUserQuery = client.query('INSERT INTO users(user_email, username, password) VALUES($1, $2, $3)', [req.body.email, req.body.username, hash]);
 
             createUserQuery.on('end', function (result) {
                 res.statusCode = 201;
