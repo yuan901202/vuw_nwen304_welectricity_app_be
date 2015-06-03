@@ -23,8 +23,8 @@ var server = app.listen(process.env.PORT, function () {
     console.log('Listening on port %d', server.address().port);
 });
 
-app.post('/user/delete', function(req, res) {
-    if(!req.body.hasOwnProperty('username') && !req.body.hasOwnProperty('user_email')) {
+app.post('/user/delete', function (req, res) {
+    if (!req.body.hasOwnProperty('username') && !req.body.hasOwnProperty('user_email')) {
         res.statusCode = 400;
         return res.send('Error 400: your request is missing some required data');
     }
@@ -34,13 +34,16 @@ app.post('/user/delete', function(req, res) {
     //Check user exists
     var userExistsQuery = client.query('SELECT COUNT(*) AS count FROM users WHERE user_email = $1 OR username = $2', [req.body.user_email, req.body.username]);
 
-    userExistsQuery.on('end', function(result) {
-       if(result.rows[0].count < 0) {
-           res.statusCode = 404;
-           return res.send('Error 404: User not found');
-       }
+    userExistsQuery.on('end', function (result) {
+        if (result.rows[0].count < 0) {
+            res.statusCode = 404;
+            return res.send('Error 404: User not found');
+        }
+    });
 
-        
+    userExistsQuery.on('error', function (error) {
+        res.statusCode = 500;
+        res.send('Error 500: An unknown server error has occurred');
     });
 });
 
