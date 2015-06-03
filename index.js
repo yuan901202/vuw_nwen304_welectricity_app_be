@@ -24,10 +24,24 @@ var server = app.listen(process.env.PORT, function () {
 });
 
 app.post('/user/delete', function(req, res) {
-    if(!req.body.hasOwnProperty('user_id') && !req.body.hasOwnProperty('username') && !req.body.hasOwnProperty('user_email')) {
+    if(!req.body.hasOwnProperty('username') && !req.body.hasOwnProperty('user_email')) {
         res.statusCode = 400;
         return res.send('Error 400: your request is missing some required data');
     }
+
+    client.connect();
+
+    //Check user exists
+    var userExistsQuery = client.query('SELECT COUNT(*) AS count FROM users WHERE user_email = $1 OR username = $2', [req.body.user_email, req.body.username]);
+
+    userExistsQuery.on('end', function(result) {
+       if(result.rows[0].count < 0) {
+           res.statusCode = 404;
+           return res.send('Error 404: User not found');
+       }
+
+        
+    });
 });
 
 //Save a game
