@@ -23,6 +23,13 @@ var server = app.listen(process.env.PORT, function () {
     console.log('Listening on port %d', server.address().port);
 });
 
+app.post('/user/delete', function(req, res) {
+    if(!req.body.hasOwnProperty('user_id') && !req.body.hasOwnProperty('username') && !req.body.hasOwnProperty('user_email')) {
+        res.statusCode = 400;
+        return res.send('Error 400: your request is missing some required data');
+    }
+});
+
 //Save a game
 app.post('/game', function (req, res) {
     client.connect();
