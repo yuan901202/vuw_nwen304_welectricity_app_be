@@ -8,8 +8,7 @@ var app = express(),
     cors = require('cors'),
     pg = require('pg').native,
     connectionString = process.env.DATABASE_URL,    //This is set in the heroku environment
-    client,
-    query;
+    client;
 
 app.use(express.bodyParser());
 app.use(express.static(__dirname));
@@ -17,34 +16,53 @@ app.use(cors());
 
 client = new pg.Client(connectionString);
 
-
-
 var server = app.listen(process.env.PORT, function () {
     console.log('Listening on port %d', server.address().port);
 });
 
+function handleServerError(query, res) {
+    query.on('error', function(error) {
+        res.statusCode = 500;
+        res.send('Error 500: An unknown server error has occurred');
+    });
+};
+
+//Delete all users data from the system
 app.post('/user/delete', function (req, res) {
-    if (!req.body.hasOwnProperty('username') && !req.body.hasOwnProperty('user_email')) {
+    if (!req.body.hasOwnProperty('username') && !req.body.hasOwnProperty('userId')) {
         res.statusCode = 400;
         return res.send('Error 400: your request is missing some required data');
     }
 
     client.connect();
 
-    //Check user exists
-    var userExistsQuery = client.query('SELECT COUNT(*) AS count FROM users WHERE user_email = $1 OR username = $2', [req.body.user_email, req.body.username]);
+    //Check user exists. Match both userId and username in case userid is reused for a different user
+    var userExistsQuery = client.query('SELECT COUNT(*) AS count FROM users WHERE user_id = $1 AND username = $2', [req.body.userId, req.body.username]);
 
     userExistsQuery.on('end', function (result) {
         if (result.rows[0].count < 0) {
             res.statusCode = 404;
             return res.send('Error 404: User not found');
         }
+
+        //Delete from saved games
+        var deleteGameQuery = client.query('DELETE FROM games WHERE user_id = $1', [req.body.userId]);
+
+        deleteGameQuery.on('end', function(result) {
+            var deleteUserQuery = client.query('DELETE FROM users WHERE user_id = $1', [req.body.userId]);
+
+            deleteUserQuery.on('end', function(result) {
+                res.statusCode = 200;
+                res.send('All user data successfully deleted');
+            });
+
+            handleServerError(deleteUserQuery, res);
+        });
+
+        handleServerError(deleteGameQuery, res);
     });
 
-    userExistsQuery.on('error', function (error) {
-        res.statusCode = 500;
-        res.send('Error 500: An unknown server error has occurred');
-    });
+    handleServerError(userExistsQuery, res);
 });
 
 //Save a game
