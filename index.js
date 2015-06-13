@@ -17,7 +17,7 @@ app.use(express.static(__dirname));
 app.use(cors());
 
 client = new pg.Client(connectionString);
-
+client.connect();
 
 
 var server = app.listen(process.env.PORT, function () {
@@ -31,7 +31,6 @@ app.post('/user/create', function(req, res) {
         return res.send('Error 400: your request is missing some required data');
     }
 
-    client.connect();
 
     //Verify email is not already set
     var userExistsQuery = client.query('SELECT COUNT(*) as count FROM users WHERE user_email = $1', [req.body.email]);
@@ -75,7 +74,6 @@ app.post('/user/create', function(req, res) {
 
 //Save a game
 app.post('/game', function (req, res) {
-    client.connect();
 
     //Validate the request
     if (!req.body.hasOwnProperty('user_id') || !req.body.hasOwnProperty('population') || !req.body.hasOwnProperty('pollution') || !req.body.hasOwnProperty('power_demand') || !req.body.hasOwnProperty('plants')) {
@@ -115,7 +113,6 @@ app.get('/game/:userid', function (req, res) {
         return res.send('Error 400; user id is required');
     }
 
-    client.connect();
     var loadGameQuery = client.query('SELECT * FROM games WHERE user_id = $1', [req.params.userid]);
 
     loadGameQuery.on('end', function (result) {
@@ -326,13 +323,11 @@ app.get('/solar/:id/pollute', function (req, res) {
  */
 function handleSaveQuery(res, client, query) {
     query.on('end', function (result) {
-        client.end();
         res.statusCode = 200;
         res.send('Game saved successfully');
     });
 
     query.on('error', function (error) {
-        client.end();
         res.statusCode = 500;
         res.send('Error 500: An unexpected error has occurred. Details: ' + error);
     });
