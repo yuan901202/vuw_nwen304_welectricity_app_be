@@ -260,6 +260,32 @@ app.get('/:dataid/pollute', function (req, res) {
     });
 });
 
+//GET power source all data
+app.get('/:dataid/all', function (req, res) {
+    if (!req.params.hasOwnProperty('dataid')) {
+        res.statusCode = 400;
+        return res.send('Error 400: data id is required');
+    }
+
+    var readDataQuery = client.query('SELECT * FROM sourceData WHERE source_id = $1', [req.params.dataid]);
+
+    readDataQuery.on('end', function (result) {
+        console.log(result);
+        if (!result) {
+            res.statusCode = 404;
+            return res.send('NO data found');
+        }
+        else {
+            res.send(result);
+        }
+    });
+
+    readDataQuery.on('error', function (error) {
+        res.statusCode = 500;
+        res.send('Error 500: ' + error);
+    });
+});
+
 //GET all power source data
 app.get('/allsources', function (req, res) {
     var readDataQuery = client.query('SELECT * FROM sourceData');
