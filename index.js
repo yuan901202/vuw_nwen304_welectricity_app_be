@@ -2,6 +2,7 @@
 //Author: Ninja-hertz
 
 var express = require('express');
+//var helmat = require('helmat');
 
 //added cors
 var app = express(),
@@ -12,9 +13,14 @@ var app = express(),
     query,
     hasher = require('password-hash-and-salt');
 
+//login token session by passport
+var passport = require('passport')
+  , LocalStrategy = require('passport-local').Strategy;
+
 app.use(express.bodyParser());
 app.use(express.static(__dirname));
 app.use(cors());
+//app.use(helmat());
 
 client = new pg.Client(connectionString);
 client.connect();
@@ -25,17 +31,16 @@ var server = app.listen(process.env.PORT, function () {
 });
 
 //Create a new user
-app.post('/user/create', function(req, res) {
+app.post('/user/create', function (req, res) {
     if(!req.body.hasOwnProperty('password') || !req.body.hasOwnProperty('email') || !req.body.hasOwnProperty('username')) {
         res.statusCode = 400;
         return res.send('Error 400: your request is missing some required data');
     }
 
-
     //Verify email is not already set
     var userExistsQuery = client.query('SELECT COUNT(*) as count FROM users WHERE user_email = $1', [req.body.email]);
 
-    userExistsQuery.on('end', function(results) {
+    userExistsQuery.on('end', function (results) {
 
         //If email is already in the database
         if (results.rows[0].count > 0) {
@@ -44,7 +49,7 @@ app.post('/user/create', function(req, res) {
         }
 
         //Create user password hash
-        hasher(req.body.password).hash(function(error, hash) {
+        hasher(req.body.password).hash(function (error, hash) {
             if(error) {
                 res.statusCode = 500;
                 return res.send("Error 500: An unknown server error has occurred");
@@ -58,7 +63,7 @@ app.post('/user/create', function(req, res) {
                 res.send('User created successfully');
             });
 
-            createUserQuery.on('error', function(error) {
+            createUserQuery.on('error', function (error) {
                 res.statusCode = 500;
                 res.send('Error 500: ' + error);
             });
@@ -110,7 +115,7 @@ app.post('/game', function (req, res) {
 app.get('/game/:userid', function (req, res) {
     if (!req.params.hasOwnProperty('userid')) {
         res.statusCode = 400;
-        return res.send('Error 400; user id is required');
+        return res.send('Error 400: user id is required');
     }
 
     var loadGameQuery = client.query('SELECT * FROM games WHERE user_id = $1', [req.params.userid]);
@@ -125,185 +130,155 @@ app.get('/game/:userid', function (req, res) {
         res.send(result.rows[0]);
     });
 
-    loadGameQuery.on('error', function(error) {
+    loadGameQuery.on('error', function (error) {
         res.statusCode = 500;
         res.send('Error 500: ' + error);
     });
 });
 
-//GET hydropower
-app.get('/hydropower/:id/power', function (req, res) {
-    if (hydropower.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
+//GET one user data except password
+app.get('/user/:userid', function (req, res) {
+    if (!req.params.hasOwnProperty('userid')) {
+        res.statusCode = 400;
+        return res.send('Error 400: user id is required');
     }
-    res.send(hydropower[req.params.id].power);
+
+    var loadUserQuery = client.query('SELECT user_id, user_email, username FROM users WHERE user_id = $1', [req.params.userid]);
+
+    loadUserQuery.on('end', function (result) {
+        if(result.rows.length <= 0) {
+            res.statusCode = 404;
+            return res.send('Error 404: user not exist');
+        }
+
+        res.statusCode = 200;
+        res.send(result.rows[0]);
+    });
+
+    loadUserQuery.on('error', function (error) {
+        res.statusCode = 500;
+        res.send('Error 500: ' + error);
+    });
 });
 
-app.get('/hydropower/:id/cost', function (req, res) {
-    if (hydropower.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(hydropower[req.params.id].cost);
+//GET all users data except password
+app.get('/allusers', function (req, res) {
+    var loadUserQuery = client.query('SELECT user_id, user_email, username FROM users');
+
+    loadUserQuery.on('end', function (result) {
+        console.log(result);
+        if (!result) {
+            res.statusCode = 404;
+            return res.send('NO data found');
+        }
+        else {
+            res.send(result);
+        }
+    });
+
+    loadUserQuery.on('error', function (error) {
+        res.statusCode = 500;
+        res.send('Error 500: ' + error);
+    });
 });
 
-app.get('/hydropower/:id/pollute', function (req, res) {
-    if (hydropower.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
+//GET power source -> power
+app.get('/:dataid/power', function (req, res) {
+    if (!req.params.hasOwnProperty('dataid')) {
+        res.statusCode = 400;
+        return res.send('Error 400: data id is required');
     }
-    res.send(hydropower[req.params.id].pollute);
+
+    var readDataQuery = client.query('SELECT source_power FROM sourceData WHERE source_id = $1', [req.params.dataid]);
+
+    readDataQuery.on('end', function (result) {
+        console.log(result);
+        if (!result) {
+            res.statusCode = 404;
+            return res.send('NO data found');
+        }
+        else {
+            res.send(result);
+        }
+    });
+
+    readDataQuery.on('error', function (error) {
+        res.statusCode = 500;
+        res.send('Error 500: ' + error);
+    });
 });
 
-//GET coal
-app.get('/coal/:id/power', function (req, res) {
-    if (coal.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
+//GET power source -> cost
+app.get('/:dataid/cost', function (req, res) {
+    if (!req.params.hasOwnProperty('dataid')) {
+        res.statusCode = 400;
+        return res.send('Error 400: data id is required');
     }
-    res.send(coal[req.params.id].power);
+
+    var readDataQuery = client.query('SELECT source_cost FROM sourceData WHERE source_id = $1', [req.params.dataid]);
+
+    readDataQuery.on('end', function (result) {
+        console.log(result);
+        if (!result) {
+            res.statusCode = 404;
+            return res.send('NO data found');
+        }
+        else {
+            res.send(result);
+        }
+    });
+
+    readDataQuery.on('error', function (error) {
+        res.statusCode = 500;
+        res.send('Error 500: ' + error);
+    });
 });
 
-app.get('/coal/:id/cost', function (req, res) {
-    if (coal.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
+//GET power source -> pollution
+app.get('/:dataid/pollute', function (req, res) {
+    if (!req.params.hasOwnProperty('dataid')) {
+        res.statusCode = 400;
+        return res.send('Error 400: data id is required');
     }
-    res.send(coal[req.params.id].cost);
+
+    var readDataQuery = client.query('SELECT source_pollute FROM sourceData WHERE source_id = $1', [req.params.dataid]);
+
+    readDataQuery.on('end', function (result) {
+        console.log(result);
+        if (!result) {
+            res.statusCode = 404;
+            return res.send('NO data found');
+        }
+        else {
+            res.send(result);
+        }
+    });
+
+    readDataQuery.on('error', function (error) {
+        res.statusCode = 500;
+        res.send('Error 500: ' + error);
+    });
 });
 
-app.get('/coal/:id/pollute', function (req, res) {
-    if (coal.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(coal[req.params.id].pollute);
-});
+//GET all power source data
+app.get('/allsources', function (req, res) {
+    var readDataQuery = client.query('SELECT * FROM sourceData');
 
-//GET oil
-app.get('/oil/:id/power', function (req, res) {
-    if (oil.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(oil[req.params.id].power);
-});
+    readDataQuery.on('end', function (result) {
+        console.log(result);
+        if (!result) {
+            res.statusCode = 404;
+            return res.send('NO data found');
+        }
+        else {
+            res.send(result);
+        }
+    });
 
-app.get('/oil/:id/cost', function (req, res) {
-    if (oil.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(oil[req.params.id].cost);
-});
-
-app.get('/oil/:id/pollute', function (req, res) {
-    if (oil.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(oil[req.params.id].pollute);
-});
-
-//GET gas
-app.get('/gas/:id/power', function (req, res) {
-    if (gas.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(gas[req.params.id].power);
-});
-
-app.get('/gas/:id/cost', function (req, res) {
-    if (gas.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(gas[req.params.id].cost);
-});
-
-app.get('/gas/:id/pollute', function (req, res) {
-    if (gas.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(gas[req.params.id].pollute);
-});
-
-//GET genthermal
-app.get('/genthermal/:id/power', function (req, res) {
-    if (genthermal.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(genthermal[req.params.id].power);
-});
-
-app.get('/genthermal/:id/cost', function (req, res) {
-    if (genthermal.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(genthermal[req.params.id].cost);
-});
-
-app.get('/genthermal/:id/pollute', function (req, res) {
-    if (genthermal.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(genthermal[req.params.id].pollute);
-});
-
-//GET nuclear
-app.get('/nuclear/:id/power', function (req, res) {
-    if (nuclear.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(nuclear[req.params.id].power);
-});
-
-app.get('/nuclear/:id/cost', function (req, res) {
-    if (nuclear.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(nuclear[req.params.id].cost);
-});
-
-app.get('/nuclear/:id/pollute', function (req, res) {
-    if (nuclear.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(nuclear[req.params.id].pollute);
-});
-
-//GET solar
-app.get('/solar/:id/power', function (req, res) {
-    if (solar.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(solar[req.params.id].power);
-});
-
-app.get('/solar/:id/cost', function (req, res) {
-    if (solar.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(solar[req.params.id].cost);
-});
-
-app.get('/solar/:id/pollute', function (req, res) {
-    if (solar.length <= req.params.id || req.params.id < 0) {
-        res.statusCode = 404;
-        return res.send('Error 404: No data found');
-    }
-    res.send(solar[req.params.id].pollute);
+    readDataQuery.on('error', function (error) {
+        res.statusCode = 500;
+        res.send('Error 500: ' + error);
+    });
 });
 
 /**
@@ -333,56 +308,3 @@ function handleSaveQuery(res, client, query) {
     });
 }
 
-//data
-//(0) close to hill
-//(1) close to river
-//(2) close to residential area
-//(3) close to valley
-var hydropower = [
-    {power: '2000', cost: '200', pollute: '200'},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
-
-var coal = [
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
-
-var oil = [
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
-
-var gas = [
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
-
-var genthermal = [
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
-
-var unclear = [
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
-
-var solar = [
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''},
-    {power: '', cost: '', pollute: ''}
-];
