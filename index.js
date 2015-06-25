@@ -97,7 +97,7 @@ app.post('/user/create', function (req, res) {
 
             createUserQuery.on('end', function (result) {
                 res.statusCode = 200;
-                res.send(JSON.stringify({userId: result.row[0].id, msg: 'User created successfully', token: "enter token here"});
+                res.send(JSON.stringify({userId: result.row[0].id, msg: 'User created successfully', token: "enter token here"}));
             });
 
             handleServerError(createUserQuery, res);
