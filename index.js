@@ -38,7 +38,7 @@ app.delete('/user/:userId', function (req, res) {
     }
 
     //Check user exists. Match both userId and username in case userid is reused for a different user
-    var userExistsQuery = client.query('SELECT COUNT(*) AS count FROM users WHERE user_id = $1 AND username = $2', [req.param('userId')]);
+    var userExistsQuery = client.query('SELECT COUNT(*) AS count FROM users WHERE user_id = $1', [req.param('userId')]);
 
     userExistsQuery.on('end', function (result) {
         if (result.rows[0].count < 0) {
@@ -100,18 +100,11 @@ app.post('/user/create', function (req, res) {
                 res.send('User created successfully');
             });
 
-            createUserQuery.on('error', function (error) {
-                res.statusCode = 500;
-                res.send('Error 500: ' + error);
-            });
+            handleServerError(createUserQuery, res);
         });
     });
 
-    userExistsQuery.on('error', function (error) {
-        console.log(error);
-        res.statusCode = 500;
-        res.send("Error 500: An unknown server error has occurred");
-    });
+    handleServerError(userExistsQuery, res);
 });
 
 //Save a game
