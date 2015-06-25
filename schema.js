@@ -14,17 +14,18 @@ var dropUsersQuery = client.query('DROP TABLE IF EXISTS users');
 //Create a user table to store all user info
 var createUserQuery = client.query('CREATE TABLE users (user_id SERIAL PRIMARY KEY, user_email VARCHAR(255) UNIQUE, username VARCHAR(255), password text NOT NULL)');
 
-//Create a new saved game table
-var savedGamesQuery = client.query('CREATE TABLE games (user_id integer UNIQUE, population integer, pollution integer, power_demand integer, plants integer[])');
-
 //TODO add user_id as a foreign key when we create a user table
 
 createUserQuery.on('end', function (result) {
     console.log('User table created');
-});
-
-savedGamesQuery.on('end', function (result) {
-    console.log('Table games created');
+    
+    //Create a new saved game table
+    var savedGamesQuery = client.query('CREATE TABLE games (user_id integer UNIQUE, population integer, pollution integer, power_demand integer, plants integer[])');
+    
+    savedGamesQuery.on('end', function (result) {
+        console.log('Table games created');
+        client.end();
+    });
 });
 
 //Figure out what to do on errors. eg restart server
