@@ -24,7 +24,6 @@ createUserQuery.on('end', function (result) {
 });
 
 savedGamesQuery.on('end', function (result) {
-    client.end();
     console.log('Table games created');
 });
 

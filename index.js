@@ -9,7 +9,6 @@ var app = express(),
     pg = require('pg').native,
     connectionString = process.env.DATABASE_URL,    //This is set in the heroku environment
     client,
-    query,
     hasher = require('password-hash-and-salt');
 
 app.use(express.bodyParser());
@@ -24,18 +23,61 @@ var server = app.listen(process.env.PORT, function () {
     console.log('Listening on port %d', server.address().port);
 });
 
-//Create a new user
-app.post('/user/create', function(req, res) {
-    if(!req.body.hasOwnProperty('password') || !req.body.hasOwnProperty('email') || !req.body.hasOwnProperty('username')) {
+function handleServerError(query, res) {
+    query.on('error', function (error) {
+        res.statusCode = 500;
+        res.send('Error 500: An unknown server error has occurred');
+    });
+};
+
+//Delete all users data from the system
+app.delete('/user/:userId', function (req, res) {
+    if (!req.param.hasOwnProperty('userId')) {
         res.statusCode = 400;
         return res.send('Error 400: your request is missing some required data');
     }
 
+    //Check user exists. Match both userId and username in case userid is reused for a different user
+    var userExistsQuery = client.query('SELECT COUNT(*) AS count FROM users WHERE user_id = $1 AND username = $2', [req.param('userId')]);
 
+    userExistsQuery.on('end', function (result) {
+        if (result.rows[0].count < 0) {
+            res.statusCode = 404;
+            return res.send('Error 404: User not found');
+        }
+
+        //Delete from saved games
+        var deleteGameQuery = client.query('DELETE FROM games WHERE user_id = $1', [req.param('userId')]);
+
+        deleteGameQuery.on('end', function (result) {
+            var deleteUserQuery = client.query('DELETE FROM users WHERE user_id = $1', [req.param('userId')]);
+
+            deleteUserQuery.on('end', function (result) {
+                res.statusCode = 200;
+                res.send('All user data successfully deleted');
+            });
+
+            handleServerError(deleteUserQuery, res);
+        });
+
+        handleServerError(deleteGameQuery, res);
+    });
+
+    handleServerError(userExistsQuery, res);
+});
+
+//Create a new user
+app.post('/user/create', function (req, res) {
+    if (!req.body.hasOwnProperty('password') || !req.body.hasOwnProperty('email') || !req.body.hasOwnProperty('username')) {
+        res.statusCode = 400;
+        return res.send('Error 400: your request is missing some required data');
+    }
+
+    client.connect();
     //Verify email is not already set
     var userExistsQuery = client.query('SELECT COUNT(*) as count FROM users WHERE user_email = $1', [req.body.email]);
 
-    userExistsQuery.on('end', function(results) {
+    userExistsQuery.on('end', function (results) {
 
         //If email is already in the database
         if (results.rows[0].count > 0) {
@@ -44,8 +86,8 @@ app.post('/user/create', function(req, res) {
         }
 
         //Create user password hash
-        hasher(req.body.password).hash(function(error, hash) {
-            if(error) {
+        hasher(req.body.password).hash(function (error, hash) {
+            if (error) {
                 res.statusCode = 500;
                 return res.send("Error 500: An unknown server error has occurred");
             }
@@ -58,7 +100,7 @@ app.post('/user/create', function(req, res) {
                 res.send('User created successfully');
             });
 
-            createUserQuery.on('error', function(error) {
+            createUserQuery.on('error', function (error) {
                 res.statusCode = 500;
                 res.send('Error 500: ' + error);
             });
@@ -69,7 +111,7 @@ app.post('/user/create', function(req, res) {
         console.log(error);
         res.statusCode = 500;
         res.send("Error 500: An unknown server error has occurred");
-    })
+    });
 });
 
 //Save a game
@@ -116,7 +158,7 @@ app.get('/game/:userid', function (req, res) {
     var loadGameQuery = client.query('SELECT * FROM games WHERE user_id = $1', [req.params.userid]);
 
     loadGameQuery.on('end', function (result) {
-        if(result.rows.length <= 0) {
+        if (result.rows.length <= 0) {
             res.statusCode = 404;
             return res.send('Error 404: No saved game found for that user');
         }
@@ -125,7 +167,7 @@ app.get('/game/:userid', function (req, res) {
         res.send(result.rows[0]);
     });
 
-    loadGameQuery.on('error', function(error) {
+    loadGameQuery.on('error', function (error) {
         res.statusCode = 500;
         res.send('Error 500: ' + error);
     });
@@ -307,19 +349,11 @@ app.get('/solar/:id/pollute', function (req, res) {
 });
 
 /**
-<<<<<<< HEAD
- * A function to handle a save savedGamesQuery
- *
- * @param res - The response object
- * @param client - The db client
- * @param query - The savedGamesQuery that is attempting to save a game
-=======
  * A function to handle a save query
  *
  * @param res - The response object
  * @param client - The db client
  * @param query - The query that is attempting to save a game
->>>>>>> feature-saveLoadGame
  */
 function handleSaveQuery(res, client, query) {
     query.on('end', function (result) {
