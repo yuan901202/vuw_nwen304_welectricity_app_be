@@ -96,8 +96,8 @@ app.post('/user/create', function (req, res) {
             var createUserQuery = client.query('INSERT INTO users(user_email, username, password) VALUES($1, $2, $3)', [req.body.email, req.body.username, hash]);
 
             createUserQuery.on('end', function (result) {
-                res.statusCode = 201;
-                res.send('User created successfully');
+                res.statusCode = 200;
+                res.JSON({userId: result.row[0].id, msg: 'User created successfully'});
             });
 
             handleServerError(createUserQuery, res);
