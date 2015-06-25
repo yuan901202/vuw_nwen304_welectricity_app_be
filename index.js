@@ -93,11 +93,12 @@ app.post('/user/create', function (req, res) {
             }
 
             //store new user in database
-            var createUserQuery = client.query('INSERT INTO users(user_email, username, password) VALUES($1, $2, $3)', [req.body.email, req.body.username, hash]);
+            var createUserQuery = client.query('INSERT INTO users(user_email, username, password) VALUES($1, $2, $3) RETURNING user_id', [req.body.email, req.body.username, hash]);
 
             createUserQuery.on('end', function (result) {
                 res.statusCode = 200;
-                res.send(JSON.stringify({userId: result.rows[0].id, msg: 'User created successfully', token: "enter token here"}));
+                console.log(JSON.stringify(result));
+                res.send(JSON.stringify({userId: result.rows[0].user_id, msg: 'User created successfully', token: "enter token here"}));
             });
 
             handleServerError(createUserQuery, res);
