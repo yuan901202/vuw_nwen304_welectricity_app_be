@@ -12,6 +12,23 @@ var app = express(),
     query,
     hasher = require('password-hash-and-salt');
 
+//Passport authenticate
+var passport = require('passport')
+  , LocalStrategy = require('passport-local').Strategy;
+
+//Enforece https server
+var http = require('http');
+var enforeceHttps = require('heroku-https');
+
+var server = http.createServer(function (req, res) {
+    if (enforceHttps(req, res))
+        console.log('User was redirected');
+    else
+        console.log('Serve content');
+});
+server.listen(3000);
+
+
 app.use(express.bodyParser());
 app.use(express.static(__dirname));
 app.use(cors());
