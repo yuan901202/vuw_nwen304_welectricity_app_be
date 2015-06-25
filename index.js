@@ -32,7 +32,7 @@ function handleServerError(query, res) {
 
 //Delete all users data from the system
 app.delete('/user/:userId', function (req, res) {
-    if (!req.param.hasOwnProperty('userId')) {
+    if (!req.param('userId') || req.param('userId') === '') {
         res.statusCode = 400;
         return res.send('Error 400: your request is missing some required data');
     }
