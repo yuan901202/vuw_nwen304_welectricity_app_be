@@ -11,6 +11,42 @@ var app = express(),
     client,
     hasher = require('password-hash-and-salt');
 
+//Cookie auth
+var expressSession = require('express-session'),
+    cookie = require('cookie'),
+    cookieSignature = require('cookie-signature'),
+    uuid = require('node-uuid');
+
+app.use(function (req, res, next) {
+    var sessionId = req.param('sessionId');
+    if (sessionId) {
+        var header = req.headers.cookie;
+        var signedCookie = 's:' + cookieSignature.sign(sessionId, 'keyboard cat');
+        req.headers.cookie = cookie.serialize('connect.sid', signedCookie);
+    }
+    next();
+});
+
+app.use(function(req, res, next) {
+    expressSession({
+        'cookie': {
+            'httpOnly': false,
+            'maxAge': 1000 * 60 * 60 * 24 * 60
+        },
+        'name': 'connect.sid',
+        'secret': 'keyboard cat',
+        'saveUninitialized': true,
+        'genid': function() {
+            var sessionId = req.param('sessionId');
+            if (sessionId) {
+                return req.param('sessionId');
+            }
+            return uuid;
+        }
+    })(req, res, next);
+});
+
+
 app.use(express.bodyParser());
 app.use(express.static(__dirname));
 app.use(cors());
@@ -29,6 +65,73 @@ function handleServerError(query, res) {
         res.send('Error 500: An unknown server error has occurred');
     });
 };
+
+//Cookie auth
+app.post('/loggedin', function (req, res) {    
+    pg.connect(connectionString, function (err, client, done) {
+        var query = 'SELECT username FROM users WHERE sessionid=$1';
+            var sessionid = req.sessionID();
+            client.query(query, [sessionid], function (err,result) {
+                if (err) {
+                    res.statusCode = 500;
+                    res.send(err);
+                } else {
+                    if (result.rows.length === 0) {
+                        res.statusCode = 401;
+                        res.send("Unauthorized");
+                    } else {
+                        res.send(result);
+                    }
+                }
+            });
+    });  
+});
+
+app.post('/login', function (req, res) {    
+    pg.connect(connectionString, function (err, client, done){
+        var username = req.body.username;
+        var userpassword = req.body.password;
+        var getUser = 'SELECT * FROM users WHERE username=$1';
+        var updateSessionId = 'UPDATE users SET sessionid=$1 WHERE username=$2';
+        client.query(getUser, [username], function (err,result) {
+            if (err) {
+                res.statusCode = 500;
+                res.send(err);
+            } else {
+                if (result.rows.length === 0){
+                    res.statusCode = 401;
+                    res.send("Unauthorized");                    
+                } else {
+                    pass = result.rows[0].password;
+                    password(userpassword).verifyAgainst(result.rows[0].password, function (error, verified) {
+                        if (error) {
+                            res.statusCode = 500;
+                            res.send(error);
+                        } else if (!verified) {
+                            res.statusCode = 401;
+                            res.send("Unauthorized");
+                        } else {
+                            addSessionId();
+                        }
+                    });  
+                }
+            }            
+        });
+
+        var addSessionId = function() {            
+            client.query(updateSessionId, [request.sessionID(),username], function (err, result) {
+                if(err) {
+                    res.statusCode = 500;
+                    res.send(err);                    
+                } else {
+                    res.send("user: " + username);
+                }
+            });            
+        };
+    });
+});
+
+
 
 //Delete all users data from the system
 app.delete('/user/:userId', function (req, res) {
