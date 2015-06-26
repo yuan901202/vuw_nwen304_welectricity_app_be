@@ -11,6 +11,16 @@ var app = express(),
     client,
     hasher = require('password-hash-and-salt');
 
+//login token
+var expressJwt = require('express-jwt');
+var jwt = require('jsonwebtoken');
+var morgan = require('morgan');
+
+app.use('/api', expressJwt({secret: secret}));
+app.use(express.json());
+app.use(express.urlencoded());
+app.use(morgan("dev"));
+
 app.use(express.bodyParser());
 app.use(express.static(__dirname));
 app.use(cors());
@@ -18,8 +28,11 @@ app.use(cors());
 client = new pg.Client(connectionString);
 client.connect();
 
+var User = require('./schema');
 
-var server = app.listen(process.env.PORT, function () {
+var port = process.env.PORT || 3000;
+
+var server = app.listen(port, function () {
     console.log('Listening on port %d', server.address().port);
 });
 
@@ -29,6 +42,78 @@ function handleServerError(query, res) {
         res.send('Error 500: An unknown server error has occurred');
     });
 };
+
+//Login auth
+app.post('/authenticate', function (req, res) {
+    User.findOne({username: req.body.username, password: req.body.password}, function (err, user) {
+        if (err) {
+            res.json({
+                type: false,
+                data: "Error occured: " + err
+            });
+        } else {
+            if (user) {
+               res.json({
+                    type: true,
+                    data: user,
+                    token: user.token
+                }); 
+            } else {
+                res.json({
+                    type: false,
+                    data: "Incorrect username/password"
+                });    
+            }
+        }
+    });
+});
+
+
+app.post('/signin', function (req, res) {
+    User.findOne({username: req.body.username, password: req.body.password}, function (err, user) {
+        if (err) {
+            res.json({
+                type: false,
+                data: "Error occured: " + err
+            });
+        } else {
+            if (user) {
+                res.json({
+                    type: false,
+                    data: "User already exists!"
+                });
+            } else {
+                var userModel = new User();
+                userModel.username = req.body.username;
+                userModel.password = req.body.password;
+                userModel.save(function(err, user) {
+                    user.token = jwt.sign(user, process.env.JWT_SECRET);
+                    user.save(function(err, user1) {
+                        res.json({
+                            type: true,
+                            data: user1,
+                            token: user1.token
+                        });
+                    });
+                })
+            }
+        }
+    });
+});
+
+function ensureAuthorized(req, res, next) {
+    var bearerToken;
+    var bearerHeader = req.headers["authorization"];
+    if (typeof bearerHeader !== 'undefined') {
+        var bearer = bearerHeader.split(" ");
+        bearerToken = bearer[1];
+        req.token = bearerToken;
+        next();
+    } else {
+        res.send(403);
+    }
+}
+
 
 //Delete all users data from the system
 app.delete('/user/:userId', function (req, res) {
